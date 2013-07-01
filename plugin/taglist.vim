@@ -843,9 +843,15 @@ endfunction
 
 " Tlist_Exe_Cmd_No_Acmds
 " Execute the specified Ex command after disabling autocommands
-function! s:Tlist_Exe_Cmd_No_Acmds(cmd)
+let s:saved_prev_winnr = 0
+function! s:Tlist_Exe_Cmd_No_Acmds(cmd, fromtaglist)
     let old_eventignore = &eventignore
     set eventignore=all
+    if a:fromtaglist
+      exe s:saved_prev_winnr . 'wincmd w'
+    else
+      let s:saved_prev_winnr = winnr('#')
+    endif
     exe a:cmd
     let &eventignore = old_eventignore
 endfunction
@@ -1210,6 +1216,7 @@ function! s:Tlist_Remove_File(file_idx, user_request)
     call s:Tlist_Log_Msg('Tlist_Remove_File (' .
                 \ s:tlist_{fidx}_filename . ', ' . a:user_request . ')')
 
+    let prev_winnr = winnr('#')
     let save_winnr = winnr()
     let winnum = bufwinnr(g:TagList_title)
     if winnum != -1
@@ -1224,6 +1231,7 @@ function! s:Tlist_Remove_File(file_idx, user_request)
         call s:Tlist_Window_Remove_File_From_Display(fidx)
 
         if save_winnr != winnum
+            exe prev_winnr . 'wincmd w'
             exe save_winnr . 'wincmd w'
             let &eventignore = old_eventignore
         endif
@@ -1320,7 +1328,7 @@ function! s:Tlist_Window_Goto_Window()
     let winnum = bufwinnr(g:TagList_title)
     if winnum != -1
         if winnr() != winnum
-            call s:Tlist_Exe_Cmd_No_Acmds(winnum . 'wincmd w')
+            call s:Tlist_Exe_Cmd_No_Acmds(winnum . 'wincmd w', 0)
         endif
     endif
 endfunction
@@ -1466,11 +1474,11 @@ function! s:Tlist_Window_Check_Width()
                     \ "width from " . width . " to " . g:Tlist_WinWidth)
         let save_winnr = winnr()
         if save_winnr != tlist_winnr
-            call s:Tlist_Exe_Cmd_No_Acmds(tlist_winnr . 'wincmd w')
+            call s:Tlist_Exe_Cmd_No_Acmds(tlist_winnr . 'wincmd w', 0)
         endif
         exe 'vert resize ' . g:Tlist_WinWidth
         if save_winnr != tlist_winnr
-            call s:Tlist_Exe_Cmd_No_Acmds('wincmd p')
+            call s:Tlist_Exe_Cmd_No_Acmds('wincmd p', 1)
         endif
     endif
 endfunction
@@ -2586,7 +2594,7 @@ function! Tlist_Update_File(filename, ftype)
 
         if winnr() != save_winnr
             " Go back to the original window
-            call s:Tlist_Exe_Cmd_No_Acmds(save_winnr . 'wincmd w')
+            call s:Tlist_Exe_Cmd_No_Acmds(save_winnr . 'wincmd w', 1)
         endif
     endif
 
@@ -2711,7 +2719,7 @@ function! s:Tlist_Window_Toggle()
     " Go back to the original window, if Tlist_GainFocus_On_ToggleOpen is not
     " set
     if !g:Tlist_GainFocus_On_ToggleOpen
-        call s:Tlist_Exe_Cmd_No_Acmds('wincmd p')
+        call s:Tlist_Exe_Cmd_No_Acmds('wincmd p', 1)
     endif
 
     " Update the taglist menu
@@ -3004,7 +3012,7 @@ function! s:Tlist_Refresh()
 
         " Jump back to the original window
         if save_winnr != winnr()
-            call s:Tlist_Exe_Cmd_No_Acmds(save_winnr . 'wincmd w')
+            call s:Tlist_Exe_Cmd_No_Acmds(save_winnr . 'wincmd w', 1)
         endif
 
         " Restore screen updates
@@ -3317,14 +3325,14 @@ function! s:Tlist_Window_Open_File(win_ctrl, filename, tagpat)
 
                     " Go to the taglist window to change the window size to
                     " the user configured value
-                    call s:Tlist_Exe_Cmd_No_Acmds('wincmd p')
+                    call s:Tlist_Exe_Cmd_No_Acmds('wincmd p', 0)
                     if g:Tlist_Use_Horiz_Window
                         exe 'resize ' . g:Tlist_WinHeight
                     else
                         exe 'vertical resize ' . g:Tlist_WinWidth
                     endif
                     " Go back to the file window
-                    call s:Tlist_Exe_Cmd_No_Acmds('wincmd p')
+                    call s:Tlist_Exe_Cmd_No_Acmds('wincmd p', 1)
                 else
                     " A plugin or help window is also present
                     wincmd w
@@ -3386,7 +3394,7 @@ function! s:Tlist_Window_Open_File(win_ctrl, filename, tagpat)
             " Go back to the window displaying the selected file
             let wnum = bufwinnr(a:filename)
             if wnum != -1 && wnum != winnr()
-                call s:Tlist_Exe_Cmd_No_Acmds(wnum . 'wincmd w')
+                call s:Tlist_Exe_Cmd_No_Acmds(wnum . 'wincmd w', 1)
             endif
         endif
     endif
@@ -3624,6 +3632,7 @@ function! s:Tlist_Window_Highlight_Tag(filename, cur_lnum, cntx, center)
     set eventignore=all
 
     " Save the original window number
+    let prev_winnr = winnr('#')
     let org_winnr = winnr()
 
     if org_winnr == winnum
@@ -3659,6 +3668,7 @@ function! s:Tlist_Window_Highlight_Tag(filename, cur_lnum, cntx, center)
         call winline()
 
         if !in_taglist_window
+            exe prev_winnr . 'wincmd w'
             exe org_winnr . 'wincmd w'
         endif
 
@@ -3698,6 +3708,7 @@ function! s:Tlist_Window_Highlight_Tag(filename, cur_lnum, cntx, center)
 
     " Go back to the original window
     if !in_taglist_window
+        exe prev_winnr . 'wincmd w'
         exe org_winnr . 'wincmd w'
     endif
 
@@ -4014,7 +4025,7 @@ function! s:Tlist_Session_Load(...)
 
         " Go back to the original window
         if save_winnr != winnr()
-            call s:Tlist_Exe_Cmd_No_Acmds('wincmd p')
+            call s:Tlist_Exe_Cmd_No_Acmds('wincmd p', 1)
         endif
     endif
 endfunction
@@ -4163,7 +4174,7 @@ function! s:Tlist_Window_Open_File_Fold(acmd_bufnr)
 
     " Go to the taglist window
     if !in_taglist_window
-        call s:Tlist_Exe_Cmd_No_Acmds(winnum . 'wincmd w')
+        call s:Tlist_Exe_Cmd_No_Acmds(winnum . 'wincmd w', 0)
     endif
 
     " Close all the folds
@@ -4182,7 +4193,7 @@ function! s:Tlist_Window_Open_File_Fold(acmd_bufnr)
 
     " Go back to the original window
     if !in_taglist_window
-        call s:Tlist_Exe_Cmd_No_Acmds(org_winnr . 'wincmd w')
+        call s:Tlist_Exe_Cmd_No_Acmds(org_winnr . 'wincmd w', 1)
     endif
 endfunction
 
