@@ -2714,12 +2714,14 @@ function! s:Tlist_Window_Toggle()
         return
     endif
 
+    let curwinnum = winnr()
+
     call s:Tlist_Window_Open()
 
     " Go back to the original window, if Tlist_GainFocus_On_ToggleOpen is not
     " set
     if !g:Tlist_GainFocus_On_ToggleOpen
-        call s:Tlist_Exe_Cmd_No_Acmds('wincmd p', 1)
+        call s:Tlist_Exe_Cmd_No_Acmds(curwinnum . 'wincmd w', 1)
     endif
 
     " Update the taglist menu
