@@ -26,4 +26,4 @@ Original description:
   taglist plugin, use the ":help taglist" command.
 
 
-.. _taglist.vim: https://github.com/mtth/cursorcross.vim.git
+.. _taglist.vim: http://vim.sourceforge.net/scripts/script.php?script_id=273
